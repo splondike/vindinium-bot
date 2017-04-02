@@ -1,5 +1,7 @@
 module BotHelper where
 
+import Data.Maybe (catMaybes)
+
 import qualified Data.HashSet as H
 import qualified Data.Graph.AStar as A
 
@@ -50,6 +52,19 @@ calcAstar board startPos target = maybePosPath
       costFunc (V.Pos x y) = (abs $ startX - x) + (abs $ startY - y)
       goalFunc = (==) target
       (V.Pos startX startY) = startPos
+
+-- | Gets all adjacent tiles to the given position, whether or not they're
+-- passable. Will filter out positions off the map.
+adjacentTiles :: V.Board -> V.Pos -> [(V.Pos, V.Tile)]
+adjacentTiles board (V.Pos x y) = catMaybes maybeResults 
+   where
+      maybeResults = map posToMaybeTuple adjacentPos
+      posToMaybeTuple pos = do
+         tile <- tileAt board pos
+         return (pos, tile)
+      adjacentPos = map applyOffset allowedOffsets
+      applyOffset (dx, dy) = V.Pos (x + dx) (y + dy)
+      allowedOffsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
 inBoard :: V.Board -> V.Pos -> Bool
 inBoard b (V.Pos x y) =
