@@ -3,37 +3,35 @@ module Bot
         )
     where
 
-import Vindinium
+import Data.Ord (comparing)
+import Data.List (sortBy)
+import Data.Maybe (catMaybes)
 
 import System.Random (getStdRandom, randomR)
 import Data.Maybe (fromJust)
 import Control.Monad (liftM)
 import Control.Monad.IO.Class (liftIO)
 
-bot :: Bot
-bot = randomBot
+import qualified BotHelper as BH
+import qualified Vindinium as V
 
-myBot :: Bot
-myBot = error "it's up to you :)"
+bot :: V.Bot
+bot state = if lowHealth then goToTavern else goToMine
+   where
+      lowHealth = (50>) $ V.heroLife $ V.stateHero state
+      goToTavern = goToClosest state (== V.TavernTile)
+      goToMine = goToClosest state isAvailableMine
 
-randomBot :: Bot
-randomBot _ = liftM fromJust $ liftIO $ pickRandom [Stay, North, South, East, West]
+      isAvailableMine (V.MineTile (Just heroId)) = heroId /= myHeroId
+      isAvailableMine (V.MineTile Nothing) = True
+      isAvailableMine _ = False
+      myHeroId = V.heroId $ V.stateHero state
 
-inBoard :: Board -> Pos -> Bool
-inBoard b (Pos x y) =
-    let s = boardSize b
-    in x >= 0 && x < s && y >= 0 && y < s
-
-tileAt :: Board -> Pos -> Maybe Tile
-tileAt b p@(Pos x y) =
-    if inBoard b p
-        then Just $ boardTiles b !! idx
-        else Nothing
-  where
-    idx = y * boardSize b + x
-
-pickRandom :: [a] -> IO (Maybe a)
-pickRandom [] = return Nothing
-pickRandom xs = do
-    idx <- getStdRandom (randomR (0, length xs - 1))
-    return . Just $ xs !! idx
+goToClosest state matcher = return $ case allPaths of
+                                   [] -> V.Stay
+                                   path:_ -> head path 
+   where
+      allPaths = sortBy pathLength $ catMaybes $ map pathTo $ allMatches
+      pathLength = comparing length
+      pathTo = BH.movementsTo state
+      allMatches = BH.findMatchingTiles state matcher

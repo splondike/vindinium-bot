@@ -1,7 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Vindinium.Types
         ( Vindinium
         , runVindinium
+        , logDebug
+        , logInfo
+        , logWarn
+        , logError
         , asks
         , Settings (..)
         , Key (..)
@@ -18,10 +23,12 @@ module Vindinium.Types
         )
     where
 
-import Data.Text (Text)
-
+import GHC.Generics (Generic)
+import Data.Hashable
+import Data.Text (Text, unpack)
 import Control.Monad.Reader (MonadReader, ReaderT, runReaderT, asks)
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (liftIO)
 
 newtype Key = Key Text deriving (Show, Eq)
 
@@ -35,6 +42,18 @@ newtype Vindinium a = Vindinium { unVindinium :: ReaderT Settings IO a }
 
 runVindinium :: Settings -> Vindinium a -> IO a
 runVindinium s = flip runReaderT s . unVindinium
+
+logDebug = logMessage LogDebug
+logInfo = logMessage LogInfo
+logWarn = logMessage LogWarn
+logError = logMessage LogError
+
+data LogLevel = LogDebug | LogInfo | LogWarn | LogError deriving (Show)
+
+logMessage :: LogLevel -> Text -> Vindinium ()
+logMessage level msg = liftIO $ putStrLn $ completeMessage
+   where
+      completeMessage = "[" ++ (show level) ++ "] " ++ (unpack msg)
 
 type Bot = State -> Vindinium Dir
 
@@ -89,7 +108,10 @@ data Tile = FreeTile
 data Pos = Pos {
     posX :: Int
   , posY :: Int
-} deriving (Show, Eq)
+} deriving (Show, Ord, Eq, Generic)
+
+
+instance Hashable Pos
 
 data Dir = Stay | North | South | East | West
     deriving (Show, Eq)
