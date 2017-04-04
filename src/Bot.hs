@@ -20,9 +20,9 @@ import Debug.Trace
 
 bot :: V.Bot
 bot state = pickRule [
-         ("heal to full", tupleRule (nextToTavern && notFullHealth, goToNearestTavern)),
+         ("heal to full", tupleRule (nextToTavern && notFullHealth && haveTavernMoney, goToNearestTavern)),
          ("snipe hero", trySnipeHero),
-         ("low health", tupleRule (lowHealth, goToNearestTavern)),
+         ("low health", tupleRule (lowHealth && haveTavernMoney, goToNearestTavern)),
          ("i'm winning", tupleRule (earningRateHighest && wealthLargest, goToNearestTavern)),
          ("go to mine", tupleRule (True, goToNearestMine))
       ]
@@ -50,6 +50,7 @@ bot state = pickRule [
             extractSuccess xs (hero, Just path) = (hero, path):xs
             heroTuples = zip otherHeroes $ map (BH.movementsTo state . V.heroPos) otherHeroes
 
+      haveTavernMoney = 10 < V.heroGold myHero
       nextToTavern = any (== V.TavernTile) adjacentTiles 
       adjacentTiles = map snd $ BH.adjacentTiles board myPos
       notFullHealth = (90>) $ V.heroLife $ V.stateHero state
