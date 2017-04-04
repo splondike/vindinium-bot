@@ -54,7 +54,7 @@ bot state = pickRule [
       adjacentTiles = map snd $ BH.adjacentTiles board myPos
       notFullHealth = (90>) $ V.heroLife $ V.stateHero state
       lowHealth = (50>) $ V.heroLife $ V.stateHero state
-      earningRateHighest = playerBetterAt V.heroGold (\p c -> (p * 10) > (c * 13))
+      earningRateHighest = playerBetterAt V.heroMineCount (\p c -> (p * 10) > (c * 13))
       wealthLargest = playerBetterAt V.heroGold (>)
       playerBetterAt prop comparator = comparator (prop myHero) (prop competition)
          where
