@@ -42,8 +42,8 @@ runCmd :: Cmd -> IO ()
 runCmd c  = do
     s <- runVindinium (cmdSettings c) $ do
         case c of
-            (Training _ t b) -> playTraining t b bot
-            (Arena _)        -> playArena bot
+            (Training _ t b) -> playTraining t b bot initialBotState
+            (Arena _)        -> playArena bot initialBotState
 
     putStrLn $ "Game finished: " ++ unpack (stateViewUrl s)
 

@@ -30,6 +30,8 @@ import Control.Monad.Reader (MonadReader, ReaderT, runReaderT, asks)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Class (liftIO)
 
+import Control.Monad.Trans.State (StateT)
+
 newtype Key = Key Text deriving (Show, Eq)
 
 data Settings = Settings {
@@ -55,7 +57,7 @@ logMessage level msg = liftIO $ putStrLn $ completeMessage
    where
       completeMessage = "[" ++ (show level) ++ "] " ++ (unpack msg)
 
-type Bot = State -> Vindinium Dir
+type Bot s = State -> StateT s Vindinium Dir
 
 data State = State {
     stateGame    :: Game

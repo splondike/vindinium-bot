@@ -26,6 +26,8 @@ executable vindinium
                   , astar
                   , hashable
                   , unordered-containers
+                  , containers
+                  , transformers
   other-modules:    Bot,
                     BotHelper,
                     Vindinium,
