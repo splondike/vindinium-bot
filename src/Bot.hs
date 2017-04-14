@@ -32,7 +32,7 @@ bot state = updateMineTurnovers state >> ST.get >>= \mineTurnovers -> pickRule [
                ("heal to full", tupleRule (notInHealLoopPosition && nextToTavern && notFullHealth && haveTavernMoney, goToNearestTavern)),
                ("snipe hero", trySnipeHero),
                ("low health", tupleRule (haveTavernMoney && lowHealth, goToNearestTavern)),
-               ("i'm winning", tupleRule (earningRateHighest && wealthLargest, goToNearestTavern)),
+               ("i'm winning", tupleRule (earningRateHighest && wealthLargest && haveSomeMoney, goToNearestTavern)),
                ("attack high earning hero", chaseOtherHero),
                ("go to mine", tupleRule (True, goToBestMine mineTurnovers))
             ]
@@ -94,6 +94,7 @@ bot state = updateMineTurnovers state >> ST.get >>= \mineTurnovers -> pickRule [
             invert len = 10 - (len - 1)
       earningRateHighest = playerBetterAt V.heroMineCount (\p c -> (p * 10) > (c * 13))
       wealthLargest = playerBetterAt V.heroGold (\p c -> (p*10) > (c*13))
+      haveSomeMoney = 100 < V.heroGold myHero
       playerBetterAt prop comparator = comparator (prop myHero) (prop competition)
          where
             competition = bestOtherHeroBy (comparing prop)
