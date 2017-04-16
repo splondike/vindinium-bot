@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bot
+module BooleanBot
         ( bot,
           initialBotState
         )
@@ -109,7 +109,7 @@ bot state = updateMineTurnovers state >> ST.get >>= \mineTurnovers -> pickRule [
             match hero = V.heroId hero == hid
 
 
-      goToNearestTavern = goToClosest state (== V.TavernTile)
+      goToNearestTavern = goToClosest state pathCostFunc (== V.TavernTile)
       goToBestMine turnoverMap = case orderedPairs of
                                       [] -> V.Stay
                                       (_, path):_ -> head path
@@ -125,6 +125,10 @@ bot state = updateMineTurnovers state >> ST.get >>= \mineTurnovers -> pickRule [
       isAvailableMine (V.MineTile (Just heroId)) = heroId /= (V.heroId myHero)
       isAvailableMine (V.MineTile Nothing) = True
       isAvailableMine _ = False
+
+      pathCostFunc pos = 0
+      -- pathCostFunc pos = length $ filter id $ map (adjacentTo pos . V.heroPos) otherHeroes
+      adjacentTo (V.Pos x1 y1) (V.Pos x2 y2) = abs (x1 - x2) + abs (y1 - y2) == 1
 
       board = V.gameBoard $ V.stateGame state
       myPos = V.heroPos myHero
@@ -155,11 +159,11 @@ updateMineTurnovers state = ST.modify update
       isMine _ = False
       board = V.gameBoard $ V.stateGame state
 
-goToClosest state matcher = case allPaths of
+goToClosest state costFunc matcher = case allPaths of
                                [] -> V.Stay
                                path:_ -> head path 
    where
       allPaths = sortBy pathLength $ catMaybes $ map pathTo $ allMatches
       pathLength = comparing length
-      pathTo = BH.movementsTo state
+      pathTo = BH.movementsToWithCost state costFunc
       allMatches = BH.findMatchingTiles state matcher

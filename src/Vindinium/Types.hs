@@ -37,6 +37,7 @@ newtype Key = Key Text deriving (Show, Eq)
 data Settings = Settings {
     settingsKey :: Key
   , settingsUrl :: Text
+  , settingsBot :: Text
 } deriving (Show, Eq)
 
 newtype Vindinium a = Vindinium { unVindinium :: ReaderT Settings IO a }

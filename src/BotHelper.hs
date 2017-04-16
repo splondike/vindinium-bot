@@ -22,10 +22,17 @@ findMatchingTiles' board matcher = positions
       boardSize = V.boardSize board
       boardTiles = V.boardTiles board
 
--- | Finds the shortest way of reaching the target position if such a way exists
+-- | movementsToWithCost without the cost function
 movementsTo :: V.State -> V.Pos -> Maybe [V.Dir]
-movementsTo state target = fmap mapToDir $ calcAstar board startPos target
+movementsTo s p = movementsToWithCost s (const 0) p
+
+-- | Finds the shortest way of reaching the target position if such a way exists
+-- The user must supply a cost function which indicates the cost of passing
+-- through a given position
+movementsToWithCost :: V.State -> (V.Pos -> Int) -> V.Pos -> Maybe [V.Dir]
+movementsToWithCost state costFunc target = fmap mapToDir $ astarPath
    where
+      astarPath = calcAstar board startPos target costFunc
       mapToDir positions = snd $ foldl f (startPos, []) positions
       f (currPos, moves) nextPos = (nextPos, moves ++ [calcDir currPos nextPos])
       calcDir pos1@(V.Pos currX currY) pos2
@@ -39,8 +46,9 @@ movementsTo state target = fmap mapToDir $ calcAstar board startPos target
       startPos = V.heroPos . V.stateHero $ state
       board = gameBoard state
 
-calcAstar :: V.Board -> V.Pos -> V.Pos -> Maybe [V.Pos]
-calcAstar board startPos target = maybePosPath
+
+calcAstar :: V.Board -> V.Pos -> V.Pos -> (V.Pos -> Int) -> Maybe [V.Pos]
+calcAstar board startPos target userCost = maybePosPath
    where
       maybePosPath = A.aStar graph (\_ _ -> 1) costFunc goalFunc startPos
       graph (V.Pos x y) = H.fromList $ filter validPos $ map applyOffset allowedOffsets
@@ -49,7 +57,7 @@ calcAstar board startPos target = maybePosPath
       allowedOffsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
       validPos pos = if pos == target then True else isPassable pos
       isPassable pos = Just V.FreeTile == tileAt board pos
-      costFunc (V.Pos x y) = (abs $ startX - x) + (abs $ startY - y)
+      costFunc pos@(V.Pos x y) = (abs $ startX - x) + (abs $ startY - y) + (userCost pos)
       goalFunc = (==) target
       (V.Pos startX startY) = startPos
 
@@ -78,6 +86,13 @@ tileAt b p@(V.Pos x y) =
         else Nothing
   where
     idx = y * V.boardSize b + x
+
+heroById :: V.State -> V.HeroId -> V.Hero
+heroById state hid = case filter f $ V.gameHeroes $ V.stateGame state of
+                          [] -> error "How did you get this id?"
+                          h:_ -> h
+   where
+      f h = V.heroId h == hid
 
 gameBoard :: V.State -> V.Board
 gameBoard = V.gameBoard . V.stateGame 
